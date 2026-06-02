@@ -1,49 +1,66 @@
 (function () {
 
-    var PROXY = 'https://cors.nb557.workers.dev/';
+    var UAKINO = 'https://uakino.best';
 
-    function get(url, onSuccess, onError) {
+    // GET raw text via Lampa's native request (bypasses CORS on the TV app).
+    function get(url, headers, onSuccess, onError) {
         var network = new Lampa.Reguest();
-        network.timeout(15000);
-        network['native'](PROXY + url, onSuccess, function (a, c) {
-            // retry with second proxy on failure
-            var network2 = new Lampa.Reguest();
-            network2.timeout(15000);
-            network2['native']('https://cors.fx666.workers.dev/' + url, onSuccess, function () {
-                onError('Failed to load: ' + url);
-            }, false, { dataType: 'text' });
-        }, false, { dataType: 'text' });
+        network.timeout(20000);
+        network['native'](url, onSuccess, function (a, c) {
+            onError(network.errorDecode ? network.errorDecode(a, c) : 'request failed');
+        }, false, { dataType: 'text', headers: headers || {} });
     }
 
-    // ── Stream chain ──────────────────────────────────────────────────────────
+    // ── Step 1: search uakino, return first film page URL ───────────────────────
 
     function searchUakino(title, onFound, onError) {
-        var url = 'https://uakino.best/index.php?do=search&subaction=search&q=' + encodeURIComponent(title);
-        get(url, function (html) {
+        var url = UAKINO + '/index.php?do=search&subaction=search&q=' + encodeURIComponent(title);
+        get(url, {}, function (html) {
             var m = html.match(/href="(https?:\/\/uakino\.best\/[^"]+\.html)"/);
             if (m) onFound(m[1]);
-            else onError('Film not found on UAkino');
+            else onError('Не знайдено на UAkino');
         }, onError);
     }
 
-    function getAshdiId(filmUrl, onFound, onError) {
-        get(filmUrl, function (html) {
-            var m = html.match(/ashdi\.vip\/vod\/(\d+)/);
-            if (m) onFound(m[1]);
-            else onError('Ashdi ID not found');
+    // ── Step 2: read news_id from film page, call playlists.php for ashdi url ────
+
+    function getAshdiUrl(filmUrl, onFound, onError) {
+        var idMatch = filmUrl.match(/\/(\d+)-[^/]+\.html/);
+        if (!idMatch) { onError('news_id не знайдено в URL'); return; }
+        var newsId = idMatch[1];
+
+        var ajax = UAKINO + '/engine/ajax/playlists.php?news_id=' + newsId +
+                   '&xfield=playlist&time=' + Date.now();
+
+        get(ajax, { 'X-Requested-With': 'XMLHttpRequest', 'Referer': filmUrl }, function (text) {
+            var data;
+            try { data = typeof text === 'string' ? JSON.parse(text) : text; }
+            catch (e) { onError('playlists.php: невалідний JSON'); return; }
+
+            var resp = (data && data.response) || '';
+            var files = [];
+            var re = /data-file="(https?:\/\/[^"]*ashdi\.vip\/[a-z]+\/\d+[^"]*)"/g, mm;
+            while ((mm = re.exec(resp)) !== null) files.push(mm[1]);
+
+            if (files.length) onFound(files[0]);
+            else onError('ashdi-лінк не знайдено');
         }, onError);
     }
 
-    function getM3u8(ashdiId, onFound, onError) {
-        get('https://ashdi.vip/vod/' + ashdiId, function (html) {
+    // ── Step 3: ashdi player page → master m3u8 ─────────────────────────────────
+
+    function getM3u8(ashdiUrl, onFound, onError) {
+        get(ashdiUrl, { 'Referer': UAKINO + '/' }, function (html) {
             var matches = html.match(/https?:\/\/[^"'\s]*\.m3u8[^"'\s]*/g);
             if (matches && matches.length) onFound(matches[0]);
-            else onError('M3U8 not found on ashdi page');
+            else onError('m3u8 не знайдено');
         }, onError);
     }
 
+    // ── Step 4: parse qualities from master playlist ────────────────────────────
+
     function parseQualities(masterUrl, onDone) {
-        get(masterUrl, function (text) {
+        get(masterUrl, { 'Referer': 'https://ashdi.vip/' }, function (text) {
             var lines = text.split('\n');
             var streams = [];
             for (var i = 0; i < lines.length; i++) {
@@ -66,14 +83,17 @@
         });
     }
 
+    // ── Playback + UI ───────────────────────────────────────────────────────────
+
     function playStream(card, url) {
-        Lampa.Player.play({ title: card.title || card.name || '', url: url });
-        Lampa.Player.playlist([{ title: card.title || card.name || '', url: url }]);
+        var title = card.title || card.name || '';
+        Lampa.Player.play({ title: title, url: url });
+        Lampa.Player.playlist([{ title: title, url: url }]);
     }
 
     function showQualityPicker(card, streams) {
         Lampa.Select.show({
-            title: 'UAkino — оберіть якість',
+            title: 'UAkino — якість',
             items: streams.map(function (s) { return { title: s.title, stream: s }; }),
             onSelect: function (item) { playStream(card, item.stream.url); },
             onBack: function () { Lampa.Controller.toggle('full'); }
@@ -82,22 +102,22 @@
 
     function startSearch(card) {
         var title = card.title || card.name || card.original_title || '';
-        if (!title) { Lampa.Noty.show('No title found'); return; }
+        if (!title) { Lampa.Noty.show('Немає назви фільму'); return; }
 
         Lampa.Noty.show('Шукаємо: ' + title);
 
         searchUakino(title, function (filmUrl) {
-            getAshdiId(filmUrl, function (ashdiId) {
-                getM3u8(ashdiId, function (masterUrl) {
+            getAshdiUrl(filmUrl, function (ashdiUrl) {
+                getM3u8(ashdiUrl, function (masterUrl) {
                     parseQualities(masterUrl, function (streams) {
                         showQualityPicker(card, streams);
                     });
-                }, function (e) { Lampa.Noty.show('M3U8: ' + e); });
-            }, function (e) { Lampa.Noty.show('AshdiID: ' + e); });
-        }, function (e) { Lampa.Noty.show('Search: ' + e); });
+                }, function (e) { Lampa.Noty.show('m3u8: ' + e); });
+            }, function (e) { Lampa.Noty.show('ashdi: ' + e); });
+        }, function (e) { Lampa.Noty.show('пошук: ' + e); });
     }
 
-    // ── Button ────────────────────────────────────────────────────────────────
+    // ── Button injection ────────────────────────────────────────────────────────
 
     var button = '<div class="full-start__button selector view--uakino">' +
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="512" height="512" fill="currentColor">' +
@@ -111,9 +131,7 @@
         var card = e.data && e.data.movie ? e.data.movie : {};
         var btn = $(button);
 
-        btn.on('hover:enter', function () {
-            startSearch(card);
-        });
+        btn.on('hover:enter', function () { startSearch(card); });
 
         e.object.activity.render().find('.view--torrent').after(btn);
     });
