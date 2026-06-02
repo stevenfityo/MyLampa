@@ -4,13 +4,27 @@ try {
 
         setTimeout(function () {
             try {
-                var keys = Object.keys(event.object).join(', ');
-                Lampa.Noty.show('keys: ' + keys.slice(0, 200));
-            } catch(e) {
-                Lampa.Noty.show('inner error: ' + e.message);
+                var candidates = [
+                    '.full-start__buttons',
+                    '.details__buttons',
+                    '.full__buttons',
+                    '.card-full__buttons',
+                    '.full-start',
+                    '.details',
+                    '.full',
+                    '.card-full'
+                ];
+
+                var found = candidates.filter(function (s) {
+                    return document.querySelector(s);
+                });
+
+                Lampa.Noty.show(found.length ? 'found: ' + found.join(' | ') : 'no selectors found');
+            } catch (e) {
+                Lampa.Noty.show('err: ' + e.message);
             }
-        }, 300);
+        }, 600);
     });
-} catch(e) {
+} catch (e) {
     Lampa.Noty.show('outer: ' + e.message);
 }
