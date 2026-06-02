@@ -1,0 +1,10 @@
+{
+    "id": "my_plugin",
+    "name": "My Plugin",
+    "version": "1.0.0",
+    "description": "A simple content source plugin for Lampa TV",
+    "author": "Your Name",
+    "main": "my-plugin.js",
+    "icon": "folder",
+    "type": "source"
+}
