@@ -104,17 +104,21 @@
         var title = card.title || card.name || card.original_title || '';
         if (!title) { Lampa.Noty.show('Немає назви фільму'); return; }
 
-        Lampa.Noty.show('Шукаємо: ' + title);
+        Lampa.Noty.show('[1] Шукаємо: ' + title);
 
         searchUakino(title, function (filmUrl) {
+            Lampa.Noty.show('[2] Фільм: ' + filmUrl);
             getAshdiUrl(filmUrl, function (ashdiUrl) {
+                Lampa.Noty.show('[3] Ashdi: ' + ashdiUrl);
                 getM3u8(ashdiUrl, function (masterUrl) {
+                    Lampa.Noty.show('[4] m3u8 OK');
                     parseQualities(masterUrl, function (streams) {
+                        Lampa.Noty.show('[5] Якостей: ' + streams.length);
                         showQualityPicker(card, streams);
                     });
-                }, function (e) { Lampa.Noty.show('m3u8: ' + e); });
-            }, function (e) { Lampa.Noty.show('ashdi: ' + e); });
-        }, function (e) { Lampa.Noty.show('пошук: ' + e); });
+                }, function (e) { Lampa.Noty.show('[X3] m3u8: ' + e); });
+            }, function (e) { Lampa.Noty.show('[X2] ashdi: ' + e); });
+        }, function (e) { Lampa.Noty.show('[X1] пошук: ' + e); });
     }
 
     // ── Button injection ────────────────────────────────────────────────────────
