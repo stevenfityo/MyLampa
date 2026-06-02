@@ -3,20 +3,14 @@ try {
         if (event.type !== 'complite') return;
 
         setTimeout(function () {
-            var html    = event.object.render();
-            var classes = [];
-
-            html.find('*').each(function () {
-                var c = $(this).attr('class');
-                if (c) c.split(' ').forEach(function (name) {
-                    if (name && classes.indexOf(name) === -1) classes.push(name);
-                });
-            });
-
-            // Show first 10 class names found inside the full screen
-            Lampa.Noty.show(classes.slice(0, 10).join(', '));
+            try {
+                var keys = Object.keys(event.object).join(', ');
+                Lampa.Noty.show('keys: ' + keys.slice(0, 200));
+            } catch(e) {
+                Lampa.Noty.show('inner error: ' + e.message);
+            }
         }, 300);
     });
 } catch(e) {
-    console.error('UAkino:', e);
+    Lampa.Noty.show('outer: ' + e.message);
 }
