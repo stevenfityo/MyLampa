@@ -2,9 +2,18 @@
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
+    function proxy(url) {
+        var proxies = [
+            'https://cors.nb557.workers.dev/',
+            'https://cors.fx666.workers.dev/'
+        ];
+        var p = proxies[new Date().getHours() % 2];
+        return p + url;
+    }
+
     function searchUakino(title, onFound, onError) {
         var url = 'https://uakino.best/index.php?do=search&subaction=search&q=' + encodeURIComponent(title);
-        fetch(url)
+        fetch(proxy(url))
             .then(function (r) { return r.text(); })
             .then(function (html) {
                 var m = html.match(/href="(https?:\/\/uakino\.best\/[^"]+\.html)"/);
@@ -15,7 +24,7 @@
     }
 
     function getAshdiId(filmUrl, onFound, onError) {
-        fetch(filmUrl)
+        fetch(proxy(filmUrl))
             .then(function (r) { return r.text(); })
             .then(function (html) {
                 var m = html.match(/ashdi\.vip\/vod\/(\d+)/);
@@ -26,7 +35,7 @@
     }
 
     function getM3u8(ashdiId, onFound, onError) {
-        fetch('https://ashdi.vip/vod/' + ashdiId)
+        fetch(proxy('https://ashdi.vip/vod/' + ashdiId))
             .then(function (r) { return r.text(); })
             .then(function (html) {
                 var matches = html.match(/https?:\/\/[^"'\s]*\.m3u8[^"'\s]*/g);
