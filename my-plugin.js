@@ -2,25 +2,21 @@ try {
     Lampa.Listener.follow('full', function (event) {
         if (event.type !== 'complite') return;
 
-        var activity = Lampa.Activity.active();
-        var card     = activity && activity.card;
-        if (!card) return;
-
-        var btn = $('<div class="full-start__button selector" style="margin-top:1em"><svg height="70" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><span>UAkino</span></div>');
-
-        btn.on('hover:enter', function () {
-            Lampa.Noty.show('UAkino: ' + (card.title || card.original_title || 'unknown'));
-        });
-
         setTimeout(function () {
-            var row = event.object.render().find('.full-start__buttons');
-            if (row.length) {
-                row.append(btn);
-            } else {
-                Lampa.Noty.show('UAkino: buttons row not found');
-            }
-        }, 200);
+            var html    = event.object.render();
+            var classes = [];
+
+            html.find('*').each(function () {
+                var c = $(this).attr('class');
+                if (c) c.split(' ').forEach(function (name) {
+                    if (name && classes.indexOf(name) === -1) classes.push(name);
+                });
+            });
+
+            // Show first 10 class names found inside the full screen
+            Lampa.Noty.show(classes.slice(0, 10).join(', '));
+        }, 300);
     });
 } catch(e) {
-    console.error('UAkino plugin error:', e);
+    console.error('UAkino:', e);
 }
