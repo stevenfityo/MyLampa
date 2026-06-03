@@ -247,9 +247,17 @@
                 searchAndPlay(movie);
             });
 
-            var torrent = e.object.activity.render().find('.view--torrent');
-            if (torrent.length) torrent.after(el);
-            else e.object.activity.render().find('.full-start__buttons').append(el);
+            // Вставляємо кнопку після .view--torrent (як усі плагіни)
+            // Якщо торент-кнопки нема — шукаємо будь-яку кнопку або просто додаємо в кінець
+            var root = e.object.activity.render();
+            var anchor = root.find('.view--torrent');
+            if (anchor.length) {
+                anchor.after(el);
+            } else {
+                var anyBtn = root.find('[class*="view--"]').last();
+                if (anyBtn.length) anyBtn.after(el);
+                else root.find('.full-start__buttons,.full-start__actions').append(el);
+            }
         });
     }
 
