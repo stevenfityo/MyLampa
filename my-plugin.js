@@ -8,7 +8,7 @@
         network.timeout(20000);
         network['native'](url, onSuccess, function (a, c) {
             onError(network.errorDecode ? network.errorDecode(a, c) : 'request failed');
-        }, false, { dataType: 'text', headers: headers || {} });
+        }, false, headers || {});
     }
 
     // ── Step 1: search uakino, return first film page URL ───────────────────────
@@ -39,7 +39,7 @@
 
             var resp = (data && data.response) || '';
             var files = [];
-            var re = /data-file="(https?:\/\/[^"]*ashdi\.vip\/[a-z]+\/\d+[^"]*)"/g, mm;
+            var re = /data-file="(https?:\/\/[^"]*ashdi\.[a-z0-9]+\/[a-z]+\/\d+[^"]*)"/gi, mm;
             while ((mm = re.exec(resp)) !== null) files.push(mm[1]);
 
             if (files.length) onFound(files[0]);
@@ -87,8 +87,8 @@
 
     function playStream(card, url) {
         var title = card.title || card.name || '';
-        Lampa.Player.play({ title: title, url: url });
-        Lampa.Player.playlist([{ title: title, url: url }]);
+        Lampa.Player.play({ title: title, url: url, movie: card });
+        Lampa.Player.playlist([{ title: title, url: url, movie: card }]);
     }
 
     function showQualityPicker(card, streams) {
