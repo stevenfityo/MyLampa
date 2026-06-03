@@ -63,14 +63,19 @@
 
             var url = UAKINO + '/index.php?do=search&subaction=search&q=' + encodeURIComponent(select_title);
 
+            Lampa.Noty.show('[UAkino] 1. Пошук: ' + select_title);
             requestText(network, url, {}, function (html) {
+                Lampa.Noty.show('[UAkino] 2. Отримано HTML, довжина: ' + html.length);
                 var m = html.match(/href="(https?:\/\/uakino\.best\/[^"]+\.html)"/);
                 if (m) {
+                    Lampa.Noty.show('[UAkino] 3. Знайдено URL: ' + m[1]);
                     loadFilm(m[1]);
                 } else {
+                    Lampa.Noty.show('[UAkino] 3. ПОМИЛКА: фільм не знайдено в HTML');
                     component.emptyForQuery(select_title);
                 }
             }, function (e) {
+                Lampa.Noty.show('[UAkino] 2. ПОМИЛКА запиту: ' + e);
                 component.empty(e);
             });
         };
@@ -89,19 +94,24 @@
             var ajax = UAKINO + '/engine/ajax/playlists.php?news_id=' + newsId +
                 '&xfield=playlist&time=' + Date.now();
 
+            Lampa.Noty.show('[UAkino] 4. playlists.php: ' + newsId);
             requestText(network, ajax, {
                 'X-Requested-With': 'XMLHttpRequest',
                 'Referer': filmUrl
             }, function (text) {
+                Lampa.Noty.show('[UAkino] 5. Відповідь плейлиста, довжина: ' + (text || '').length);
                 var data;
                 try {
                     data = typeof text === 'string' ? JSON.parse(text) : text;
                 } catch (e) {
+                    Lampa.Noty.show('[UAkino] 5. JSON parse помилка: ' + e);
                     data = null;
                 }
 
                 var resp = (data && data.response) || '';
+                Lampa.Noty.show('[UAkino] 6. response довжина: ' + resp.length);
                 var items = parsePlaylist(resp, filmUrl);
+                Lampa.Noty.show('[UAkino] 7. Знайдено стримів: ' + items.length);
 
                 if (items.length) {
                     component.draw(items);
@@ -109,6 +119,7 @@
                     component.empty('Відео-лінки не знайдено');
                 }
             }, function (e) {
+                Lampa.Noty.show('[UAkino] 5. ПОМИЛКА playlists.php: ' + e);
                 component.empty(e);
             });
         }
