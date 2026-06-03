@@ -1,10 +1,10 @@
 {
-    "id": "my_plugin",
-    "name": "My Plugin",
-    "version": "1.0.0",
-    "description": "A simple content source plugin for Lampa TV",
-    "author": "Your Name",
+    "id": "uakino_online",
+    "name": "UAkino Online",
+    "version": "2.0.0",
+    "description": "Онлайн-перегляд з UAkino для Lampa з нативним UI, історією та прогресом перегляду",
+    "author": "Stepan Fityo",
     "main": "my-plugin.js",
-    "icon": "folder",
-    "type": "source"
+    "icon": "play",
+    "type": "video"
 }
